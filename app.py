@@ -2196,6 +2196,7 @@ def customer_bill_print_search():
         printable = []
 
         for cust in custs:
+            cid = cust["customer_id"]
             cursor.execute(
                 """
                 SELECT 
