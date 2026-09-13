@@ -2139,8 +2139,27 @@ def customer_bill_print_search():
         to_d   = from_d
 
         cursor.execute(
-            "SELECT bill_id, customer_id, bill_date, quantity, rate, amount, supplier_bill_id, old_balance, final_balance "
-            "FROM customer_bills WHERE customer_id=%s AND bill_date BETWEEN %s AND %s ORDER BY bill_date, bill_id",
+            """
+            SELECT 
+                cb.bill_id,
+                cb.customer_id,
+                cb.bill_date,
+                cb.quantity,
+                cb.rate,
+                cb.amount,
+                cb.supplier_bill_id,
+                cb.old_balance,
+                cb.final_balance,
+                s.name AS supplier_name
+            FROM customer_bills cb
+            LEFT JOIN supplier_bills sb
+                ON cb.supplier_bill_id = sb.bill_id
+            LEFT JOIN suppliers s
+                ON sb.supplier_id = s.supplier_id
+            WHERE cb.customer_id = %s
+              AND cb.bill_date BETWEEN %s AND %s
+            ORDER BY cb.bill_date, cb.bill_id
+            """,
             (customer_id, from_d, to_d)
         )
         purchases = cursor.fetchall() or []
@@ -2177,10 +2196,28 @@ def customer_bill_print_search():
         printable = []
 
         for cust in custs:
-            cid = cust["customer_id"]
             cursor.execute(
-                "SELECT bill_id, customer_id, bill_date, quantity, rate, amount, supplier_bill_id, old_balance, final_balance "
-                "FROM customer_bills WHERE customer_id=%s AND bill_date=%s ORDER BY bill_date, bill_id",
+                """
+                SELECT 
+                    cb.bill_id,
+                    cb.customer_id,
+                    cb.bill_date,
+                    cb.quantity,
+                    cb.rate,
+                    cb.amount,
+                    cb.supplier_bill_id,
+                    cb.old_balance,
+                    cb.final_balance,
+                    s.name AS supplier_name
+                FROM customer_bills cb
+                LEFT JOIN supplier_bills sb
+                    ON cb.supplier_bill_id = sb.bill_id
+                LEFT JOIN suppliers s
+                    ON sb.supplier_id = s.supplier_id
+                WHERE cb.customer_id = %s
+                  AND cb.bill_date = %s
+                ORDER BY cb.bill_date, cb.bill_id
+                """,
                 (cid, period)
             )
             purchases       = cursor.fetchall() or []
