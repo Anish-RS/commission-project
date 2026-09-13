@@ -231,8 +231,7 @@
         <thead>
             <tr style="border-top:2px solid #000;">
                 <th>#</th>
-                <th>Bill ID</th>
-                <th>Supplier Ref</th>
+                <th>Supplier</th>
                 <th class="right">Rate</th>
                 <th class="right">Qty</th>
                 <th class="right">Amount</th>
@@ -246,8 +245,7 @@
             {% for p in block.purchases %}
             <tr>
                 <td>{{ loop.index }}</td>
-                <td>{{ p.bill_id }}</td>
-                <td>{{ p.supplier_bill_id or "-" }}</td>
+                <td class="supplier-name">{{ p.supplier_name or "-" }}</td>
                 <td class="right">{{ "%.2f"|format(p.rate or 0) }}</td>
                 <td class="right">{{ "%.2f"|format(p.quantity or 0) }}</td>
                 <td class="right">{{ "%.2f"|format(p.amount or 0) }}</td>
@@ -255,7 +253,7 @@
             {% endfor %}
         
             <tr style="border-top:2px solid #000;">
-                <td colspan="4"></td>
+                <td colspan="3"></td>
                 <td class="right">
                     {{ "%.2f"|format(
                         block.purchases|sum(attribute='quantity')
