@@ -11,8 +11,9 @@
             size: 76.2mm auto;
             margin: 2mm;
         }
-
-        html, body {
+    
+        html,
+        body {
             width: 76.2mm;
             margin: 0;
             padding: 4mm 3mm;
@@ -23,7 +24,16 @@
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
         }
-
+    
+        * {
+            box-sizing: border-box;
+        }
+    
+    
+        /* =========================================================
+           PRINT BUTTON
+           ========================================================= */
+    
         .print-btn {
             display: inline-block;
             margin-bottom: 6px;
@@ -31,132 +41,247 @@
             font-size: 14px;
             cursor: pointer;
         }
-
+    
+    
+        /* =========================================================
+           CUSTOMER PAGE
+           ========================================================= */
+    
         .customer-page {
+            width: 100%;
             break-after: page;
             page-break-after: always;
-            margin-bottom: 50mm;
+    
+            /* IMPORTANT:
+               Removed margin-bottom: 50mm;
+               It was creating unnecessary empty space. */
+            margin: 0;
+            padding: 0;
         }
-        
+    
         .customer-page:last-child {
             break-after: auto;
             page-break-after: auto;
         }
-
+    
+    
+        /* =========================================================
+           BUSINESS HEADER
+           ========================================================= */
+    
         .business-header {
+            width: 100%;
             text-align: center;
             margin-bottom: 10px;
         }
-
+    
         .business-name {
             font-size: 20px;
             font-weight: 900;
         }
-
+    
         .business-type {
             font-size: 17px;
             font-weight: 700;
         }
-
+    
         .business-location {
             font-size: 17px;
             font-weight: 700;
         }
-
+    
         .business-mobile {
             font-size: 15px;
             font-weight: 700;
         }
-
+    
         .business-divider {
+            width: 100%;
             border: 0;
             border-top: 1px solid #000;
             margin: 6px 0;
         }
-
+    
+    
+        /* =========================================================
+           CUSTOMER DETAILS
+           ========================================================= */
+    
         h2 {
             font-size: 18px;
             margin: 0 0 4px 0;
         }
-
+    
+        .customer-header-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+    
+        .customer-header-row h2 {
+            flex: 1;
+            min-width: 0;
+        }
+    
+        .customer-phone {
+            font-size: 14px;
+            font-weight: 700;
+            text-align: right;
+            flex-shrink: 0;
+            margin-left: 5px;
+        }
+    
         .meta {
+            width: 100%;
             font-size: 14px;
             margin-bottom: 6px;
             line-height: 1.3;
             font-weight: 600;
         }
-
+    
+    
+        /* =========================================================
+           PURCHASE TABLE
+           ========================================================= */
+    
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14.5px;
             margin-top: 6px;
+            font-size: 14.5px;
             font-weight: 600;
+    
+            /* IMPORTANT */
+            table-layout: fixed;
         }
-
-        th, td {
-            padding: 4px;
+    
+        th,
+        td {
+            padding: 4px 2px;
             text-align: left;
             border-bottom: 1px dashed #222;
+    
+            /* Allows supplier names to wrap */
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
-
+    
         thead th {
             border-bottom: 1px solid #222;
             font-weight: 700;
         }
-
+    
         .right {
             text-align: right;
         }
-
+    
+        .supplier-name {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+        }
+    
+    
+        /* =========================================================
+           TABLE COLUMN WIDTHS
+           
+           Total = 100%
+           ========================================================= */
+    
+        table th:nth-child(1),
+        table td:nth-child(1) {
+            width: 7%;
+        }
+    
+        table th:nth-child(2),
+        table td:nth-child(2) {
+            width: 27%;
+        }
+    
+        table th:nth-child(3),
+        table td:nth-child(3) {
+            width: 21%;
+        }
+    
+        table th:nth-child(4),
+        table td:nth-child(4) {
+            width: 17%;
+        }
+    
+        table th:nth-child(5),
+        table td:nth-child(5) {
+            width: 28%;
+        }
+    
+    
+        /* =========================================================
+           SUMMARY
+           ========================================================= */
+    
         .summary {
+            width: 100%;
             margin-top: 8px;
             font-size: 14.5px;
             font-weight: 600;
         }
-
+    
         .row {
+            width: 100%;
             display: flex;
             justify-content: space-between;
             padding: 2px 0;
         }
-
+    
+        .current-balance-row {
+            width: 100%;
+            border-top: 2px solid #000;
+            margin-top: 5px;
+            padding-top: 6px;
+            font-weight: 900;
+            font-size: 18px;
+        }
+    
+    
+        /* =========================================================
+           FOOTER
+           ========================================================= */
+    
         .footer {
+            width: 100%;
             margin-top: 8px;
             font-size: 11.5px;
             border-top: 1px dashed #666;
             padding-top: 6px;
             color: #111;
+            clear: both;
         }
-
+    
+    
+        /* =========================================================
+           PRINT
+           ========================================================= */
+    
         @media print {
+    
             .print-btn {
                 display: none;
             }
-
-            html, body {
+    
+            html,
+            body {
+                width: 76.2mm;
+                margin: 0;
+                padding: 0;
+            }
+    
+            .customer-page {
+                width: 100%;
                 margin: 0;
                 padding: 0;
             }
         }
-        .current-balance-row {
-            border-top: 1px dashed #999;
-            padding-top: 6px;
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        .customer-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-
-        .customer-phone {
-            font-size: 14px;
-            font-weight: 700;
-            text-align: right;
-        }
+    
     </style>
 </head>
 
@@ -295,7 +420,7 @@
             <div>{{ "%.2f"|format(block.sum_receipts) }}</div>
         </div>
 
-        <div class="row current-balance-row" style="border-top:2px font-weight:900;">
+        <div class="row current-balance-row">
             <div>Current Balance</div>
             <div>{{ "%.2f"|format(block.current_balance) }}</div>
         </div>
