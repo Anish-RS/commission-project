@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import hashlib
 import requests
@@ -144,6 +145,7 @@ def get_customer_details(customer_id):
                 customer_id,
                 name,
                 phone,
+                phone2,
                 balance,
                 opening_balance,
                 whatsapp_blocked_reason
@@ -206,7 +208,8 @@ def get_customers_for_date(statement_date):
             SELECT DISTINCT
                 c.customer_id,
                 c.name,
-                c.phone
+                c.phone,
+                c.phone2
             FROM customers c
             INNER JOIN customer_bills cb
                     ON cb.customer_id = c.customer_id
@@ -994,6 +997,40 @@ def mark_retry(
         cursor.close()
         conn.close()
 
+def get_customer_numbers(customer):
+    """
+    Returns the WhatsApp numbers to message for a customer as
+    [(label, digits), ...] - primary first, then the secondary number
+    only if it exists and is different from the primary. A customer
+    with one number gets a one-item list, so they are messaged once.
+    """
+
+    numbers = []
+    seen = set()
+
+    for label, key in (("primary", "phone"), ("secondary", "phone2")):
+
+        raw = customer.get(key)
+        digits = re.sub(r"\D", "", str(raw)) if raw else ""
+
+        if digits and digits not in seen:
+            seen.add(digits)
+            numbers.append((label, digits))
+
+    return numbers
+
+
+def _short_reason(reason):
+    """Short, readable text for a WhatsApp API failure reason."""
+
+    if isinstance(reason, dict):
+        err = reason.get("error")
+        if isinstance(err, dict) and err.get("message"):
+            return str(err["message"])
+
+    return str(reason)
+
+
 def send_purchase_statement(customer_id, statement_date):
 
     config = verify_whatsapp_configuration()
@@ -1054,7 +1091,9 @@ def _send_purchase_statement_locked(customer_id, statement_date):
 
         }
 
-    if not customer.get("phone"):
+    numbers = get_customer_numbers(customer)
+
+    if not numbers:
 
         return {
 
@@ -1111,73 +1150,126 @@ def _send_purchase_statement_locked(customer_id, statement_date):
 
     token = statement_link.split("/")[-1]
 
-    payload = build_template_payload(
+    # Send to every number the customer has (primary, plus secondary if
+    # present). The "already sent?" and 12-hour checks above ran once for
+    # the customer, before any message went out, so the second number is
+    # not blocked by the first number's just-written log row. Each number
+    # gets its own log row, and the advisory lock held by the caller
+    # covers this whole loop, so a double-click can't send twice.
+    results = []
 
-        customer_name=customer["name"],
+    for label, number in numbers:
 
-        statement_date=statement_date.strftime("%d-%b-%Y"),
+        payload = build_template_payload(
 
-        purchase_total=summary["purchase_total"],
+            customer_name=customer["name"],
 
-        purchase_entries=summary["purchase_entries"],
+            statement_date=statement_date.strftime("%d-%b-%Y"),
 
-        token=token,
+            purchase_total=summary["purchase_total"],
 
-        recipient_number="91" + customer["phone"]
+            purchase_entries=summary["purchase_entries"],
 
-    )
+            token=token,
 
-    # Mark this customer as SENDING *before* calling the WhatsApp API.
-    # This is what other requests (another user's preview poll, or
-    # another tab) see immediately, so they can grey this customer out
-    # instead of allowing a second send to be queued up behind ours.
-    log_id = create_sending_log(
-        customer_id,
-        statement_date,
-        summary["purchase_total"],
-        summary["purchase_entries"]
-    )
-
-    result = send_template_message(payload)
-
-    print("WhatsApp Payload:", payload)
-    print("WhatsApp Result:", result)
-
-    if result["success"]:
-
-        finalize_whatsapp_log(
-
-            log_id,
-
-            "SUCCESS",
-
-            whatsapp_message_id=result["message_id"]
+            recipient_number="91" + number
 
         )
 
-    else:
-
-        finalize_whatsapp_log(
-
-            log_id,
-
-            "FAILED",
-
-            error_message=str(result["reason"])
-
+        # Mark as SENDING *before* calling the WhatsApp API so other
+        # requests see this customer as in progress immediately.
+        log_id = create_sending_log(
+            customer_id,
+            statement_date,
+            summary["purchase_total"],
+            summary["purchase_entries"]
         )
 
-        # This specific error means WhatsApp itself rejected the
-        # number as undeliverable (no WhatsApp account / invalid
-        # number) - retrying won't help until the number is fixed, so
-        # stop calling the API for this customer until someone clears
-        # the block.
-        if _reason_indicates_bad_number(result["reason"]):
+        result = send_template_message(payload)
 
-            mark_customer_whatsapp_blocked(
-                customer_id,
-                "WhatsApp reported this number as undeliverable "
-                "(error 131026 - likely no WhatsApp account or wrong number)"
+        print(f"WhatsApp Payload ({label}):", payload)
+        print(f"WhatsApp Result ({label}):", result)
+
+        if result["success"]:
+
+            finalize_whatsapp_log(
+
+                log_id,
+
+                "SUCCESS",
+
+                whatsapp_message_id=result["message_id"]
+
             )
 
-    return result
+        else:
+
+            error_text = str(result["reason"])
+
+            if len(numbers) > 1:
+                error_text = f"[{label} number] {error_text}"
+
+            finalize_whatsapp_log(
+
+                log_id,
+
+                "FAILED",
+
+                error_message=error_text
+
+            )
+
+        results.append((label, result))
+
+    # ------------------------------------------------------------
+    # Block the customer only when WhatsApp rejected EVERY number as
+    # undeliverable (no WhatsApp account / invalid number). If one
+    # number works, the customer is still reachable, so no block.
+    # ------------------------------------------------------------
+    any_sent = any(r["success"] for _, r in results)
+
+    if not any_sent and all(
+        _reason_indicates_bad_number(r["reason"]) for _, r in results
+    ):
+
+        which = "this number" if len(results) == 1 else "these numbers"
+
+        mark_customer_whatsapp_blocked(
+            customer_id,
+            f"WhatsApp reported {which} as undeliverable "
+            "(error 131026 - likely no WhatsApp account or wrong number)"
+        )
+
+    # One number: return exactly what the API call returned, as before.
+    if len(results) == 1:
+        return results[0][1]
+
+    sent_labels = [label for label, r in results if r["success"]]
+    failed = [(label, r) for label, r in results if not r["success"]]
+
+    if sent_labels:
+
+        outcome = {
+            "success": True,
+            "message_id": next(
+                r["message_id"] for _, r in results if r["success"]
+            ),
+            "sent_to": sent_labels
+        }
+
+        if failed:
+            label, r = failed[0]
+            outcome["note"] = (
+                f"Sent to the {sent_labels[0]} number, but the "
+                f"{label} number failed: {_short_reason(r['reason'])}"
+            )
+
+        return outcome
+
+    return {
+        "success": False,
+        "reason": "; ".join(
+            f"{label} number: {_short_reason(r['reason'])}"
+            for label, r in results
+        )
+    }
