@@ -244,6 +244,43 @@
     line-height:1;
 }
 
+.phone-row{
+    display:flex;
+    gap:10px;
+    align-items:stretch;
+}
+.phone-row .form-input{ flex:1; min-width:0; }
+
+.icon-btn{
+    flex:0 0 auto;
+    width:48px;
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    background:var(--ivory);
+    color:var(--forest);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    transition:border-color 0.15s ease, color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.icon-btn svg{ width:16px; height:16px; }
+.icon-btn:hover{ border-color:var(--gold); color:var(--gold); background:#fff; }
+.icon-btn:focus-visible{ outline:none; box-shadow:0 0 0 4px rgba(184,145,47,0.14); border-color:var(--gold); }
+.icon-btn.remove:hover{ border-color:var(--rust); color:var(--rust); }
+
+.phone2-group{ display:none; }
+.phone2-group.open{ display:flex; animation:riseIn 0.3s cubic-bezier(.16,.9,.35,1) both; }
+
+.optional-tag{
+    font-weight:500;
+    letter-spacing:0.3px;
+    color:var(--slate-soft);
+    text-transform:none;
+    font-size:10.5px;
+}
+
 .char-count{
     font-weight:500;
     letter-spacing:0.3px;
@@ -545,7 +582,7 @@
 
     <div class="info-banner reveal d2">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        <p>Customer ID and balance are locked. Update the name or phone number below, then save.</p>
+        <p>Customer ID and balance are locked. Update the name or phone numbers below, then save.</p>
     </div>
 
     <div class="edit-card reveal d3">
@@ -645,18 +682,52 @@
                         Phone number
                     </span>
                 </label>
-                <input
-                    type="tel"
-                    name="phone"
-                    value="{{ customer.phone or '' }}"
-                    placeholder="98765 43210"
-                    inputmode="numeric"
-                    autocomplete="off"
-                    class="form-input"
-                    id="phoneInput">
+                <div class="phone-row">
+                    <input
+                        type="tel"
+                        name="phone"
+                        value="{{ customer.phone or '' }}"
+                        placeholder="98765 43210"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="form-input"
+                        id="phoneInput">
+                    <button type="button" class="icon-btn" id="addPhone2Btn"
+                            title="Add another number" aria-label="Add another number">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                </div>
                 <p class="helper-note error-note" id="phoneError" style="display:none;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
                     Enter a valid 10-digit phone number.
+                </p>
+            </div>
+
+            <div class="form-group full phone2-group" id="phone2Group">
+                <label class="form-label">
+                    <span class="label-main">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.92z"/></svg>
+                        Secondary phone number
+                    </span>
+                </label>
+                <div class="phone-row">
+                    <input
+                        type="tel"
+                        name="phone2"
+                        value="{{ customer.phone2 or '' }}"
+                        placeholder="Alternate number"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="form-input"
+                        id="phone2Input">
+                    <button type="button" class="icon-btn remove" id="removePhone2Btn"
+                            title="Remove secondary number" aria-label="Remove secondary number">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <p class="helper-note error-note" id="phone2Error" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                    <span id="phone2ErrorText">Enter a valid 10-digit phone number.</span>
                 </p>
             </div>
 
@@ -684,12 +755,18 @@
     var phoneInput = document.getElementById('phoneInput');
     var nameError = document.getElementById('nameError');
     var phoneError = document.getElementById('phoneError');
+    var phone2Input = document.getElementById('phone2Input');
+    var phone2Error = document.getElementById('phone2Error');
+    var phone2ErrorText = document.getElementById('phone2ErrorText');
+    var phone2Group = document.getElementById('phone2Group');
+    var addPhone2Btn = document.getElementById('addPhone2Btn');
+    var removePhone2Btn = document.getElementById('removePhone2Btn');
     var nameCount = document.getElementById('nameCount');
     var dirtyChip = document.getElementById('dirtyChip');
     var nameGroup = document.getElementById('nameGroup');
 
     var initialValues = {};
-    var trackedInputs = [nameInput, phoneInput].filter(Boolean);
+    var trackedInputs = [nameInput, phoneInput, phone2Input].filter(Boolean);
 
     trackedInputs.forEach(function(input){
         initialValues[input.name] = input.value;
@@ -724,19 +801,57 @@
         updateCount();
     }
 
-    // Live phone formatting: groups digits as "XXXXX XXXXX"
+    // Phone fields: digits only, max 10; secondary must differ from primary
+    function phone2Message(){
+        if(!phone2Input || !phone2Group.classList.contains('open')) return '';
+        var v = phone2Input.value;
+        if(v.length !== 0 && v.length !== 10) return 'Enter a valid 10-digit phone number.';
+        if(v.length === 10 && phoneInput && v === phoneInput.value) return 'Secondary number must be different from the primary number.';
+        return '';
+    }
+
+    function refreshPhone2(){
+        if(!phone2Input) return;
+        var msg = phone2Message();
+        phone2Input.classList.toggle('invalid', !!msg);
+        phone2ErrorText.textContent = msg || 'Enter a valid 10-digit phone number.';
+        phone2Error.style.display = msg ? 'flex' : 'none';
+    }
+
     if(phoneInput){
         phoneInput.addEventListener('input', function () {
-            phoneInput.value = phoneInput.value
-                .replace(/\D/g, '')
-                .slice(0, 10);
-        
-            var valid =
-                phoneInput.value.length === 0 ||
-                phoneInput.value.length === 10;
-        
+            phoneInput.value = phoneInput.value.replace(/\D/g, '').slice(0, 10);
+
+            var valid = phoneInput.value.length === 0 || phoneInput.value.length === 10;
             phoneInput.classList.toggle('invalid', !valid);
             phoneError.style.display = valid ? 'none' : 'flex';
+            refreshPhone2();
+        });
+    }
+
+    if(phone2Input){
+        phone2Input.addEventListener('input', function () {
+            phone2Input.value = phone2Input.value.replace(/\D/g, '').slice(0, 10);
+            refreshPhone2();
+        });
+    }
+
+    // + reveals the secondary field, x clears and hides it
+    if(addPhone2Btn && phone2Group){
+        addPhone2Btn.addEventListener('click', function(){
+            phone2Group.classList.add('open');
+            addPhone2Btn.style.display = 'none';
+            phone2Input.focus();
+        });
+    }
+    if(removePhone2Btn && phone2Group){
+        removePhone2Btn.addEventListener('click', function(){
+            phone2Input.value = '';
+            refreshPhone2();
+            phone2Group.classList.remove('open');
+            addPhone2Btn.style.display = '';
+            checkDirty();
+            phoneInput.focus();
         });
     }
 
@@ -764,6 +879,11 @@
                 phoneInput.classList.add('invalid');
                 phoneError.style.display = 'flex';
             }
+        }
+
+        if(phone2Input && phone2Message()){
+            valid = false;
+            refreshPhone2();
         }
 
         if(!valid){
