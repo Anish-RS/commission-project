@@ -1274,7 +1274,7 @@
           <input type="checkbox" class="bqs-bulk-cb" value="${c.customer_id}" ${checked} ${disabled ? "disabled" : ""}>
           <div class="bqs-bulk-check-info">
             <div class="bqs-bulk-check-name">${c.customer_name}</div>
-            <div class="bqs-bulk-check-meta">₹${(c.purchase_total || 0).toFixed(2)} · ${c.purchase_entries} entr${c.purchase_entries === 1 ? 'y' : 'ies'}</div>
+            <div class="bqs-bulk-check-meta">₹${(c.purchase_total || 0).toFixed(2)} · ${c.purchase_entries} entr${c.purchase_entries === 1 ? 'y' : 'ies'}${c.number_count > 1 ? ' · 2 numbers' : ''}</div>
           </div>
           <span class="bqs-bulk-badge-wrap">${badgeWrapHtml(c)}</span>
         </div>
@@ -1478,6 +1478,7 @@
           <div>
             <div class="name">${r.customer_name}</div>
             ${r.status === "failed" ? `<div class="reason">${r.reason || ""}</div>` : ""}
+            ${r.status === "sent" && r.note ? `<div class="reason">${r.note}</div>` : ""}
           </div>
           <span class="bqs-bulk-badge ${r.status}">${r.status === "sent" ? "Sent" : "Failed"}</span>
         </div>
