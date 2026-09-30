@@ -1536,7 +1536,13 @@ def send_customer_statement_whatsapp():
     )
 
     if result["success"]:
-        flash("WhatsApp message sent successfully.", "success")
+        if len(result.get("sent_to") or []) > 1:
+            flash("WhatsApp message sent to both numbers.", "success")
+        else:
+            flash("WhatsApp message sent successfully.", "success")
+
+        if result.get("note"):
+            flash(result["note"], "danger")
     else:
         flash(result["reason"], "danger")
 
@@ -1576,6 +1582,7 @@ def preview_bulk_customer_statements_whatsapp():
         cid = cust["customer_id"]
         cname = cust["name"]
         phone = cust.get("phone")
+        phone2 = cust.get("phone2")
 
         summary = get_purchase_summary(cid, statement_date)
         already_sent = has_statement_been_sent(cid, statement_date)
@@ -1586,9 +1593,11 @@ def preview_bulk_customer_statements_whatsapp():
             "customer_id": cid,
             "customer_name": cname,
             "phone": phone,
+            "phone2": phone2,
+            "number_count": (1 if phone else 0) + (1 if phone2 and phone2 != phone else 0),
             "purchase_total": summary["purchase_total"],
             "purchase_entries": summary["purchase_entries"],
-            "has_phone": bool(phone),
+            "has_phone": bool(phone or phone2),
             "already_sent": already_sent,
             "in_progress": in_progress,
             "blocked": blocked_reason is not None,
@@ -1679,7 +1688,7 @@ def send_bulk_customer_statements_whatsapp():
         cid = cust["customer_id"]
         cname = cust["name"]
 
-        if not cust.get("phone"):
+        if not (cust.get("phone") or cust.get("phone2")):
             results.append({
                 "customer_id": cid,
                 "customer_name": cname,
@@ -1712,11 +1721,14 @@ def send_bulk_customer_statements_whatsapp():
         outcome = send_purchase_statement(cid, statement_date)
 
         if outcome.get("success"):
-            results.append({
+            sent_entry = {
                 "customer_id": cid,
                 "customer_name": cname,
                 "status": "sent"
-            })
+            }
+            if outcome.get("note"):
+                sent_entry["note"] = outcome["note"]
+            results.append(sent_entry)
             sent_count += 1
         else:
             results.append({
@@ -2929,6 +2941,7 @@ def edit_supplier(supplier_id):
     )
 
 @app.route("/customer/edit/<int:customer_id>", methods=["GET", "POST"])
+
 def edit_customer(customer_id):
 
     conn = get_connection()
@@ -2938,18 +2951,15 @@ def edit_customer(customer_id):
 
         name = request.form.get("name", "").strip().title()
 
-        phone = re.sub(r"\D", "", request.form.get("phone", ""))
-
-        # Secondary number is optional: empty -> stored as NULL
-        phone2 = re.sub(r"\D", "", request.form.get("phone2", "")) or None
+        phone = request.form.get("phone", "")
+        phone = re.sub(r"\D", "", phone)
 
         cursor.execute("""
             UPDATE customers
             SET name = %s,
-                phone = %s,
-                phone2 = %s
+                phone = %s
             WHERE customer_id = %s
-        """, (name, phone, phone2, customer_id))
+        """, (name, phone, customer_id))
 
         conn.commit()
 
@@ -2960,7 +2970,7 @@ def edit_customer(customer_id):
         return redirect(url_for("find_page", mode="customer"))
 
     cursor.execute("""
-        SELECT customer_id, name, phone, phone2, balance
+        SELECT customer_id, name, phone, balance
         FROM customers
         WHERE customer_id = %s
     """, (customer_id,))
@@ -2973,7 +2983,8 @@ def edit_customer(customer_id):
     return render_template(
         "customer_edit_simple.html",
         customer=customer
-    )    
+    )
+    
 # ---------------------------------------------------------------------------
 # Account adjustment
 # ---------------------------------------------------------------------------
