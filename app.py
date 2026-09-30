@@ -2929,7 +2929,6 @@ def edit_supplier(supplier_id):
     )
 
 @app.route("/customer/edit/<int:customer_id>", methods=["GET", "POST"])
-
 def edit_customer(customer_id):
 
     conn = get_connection()
@@ -2939,15 +2938,18 @@ def edit_customer(customer_id):
 
         name = request.form.get("name", "").strip().title()
 
-        phone = request.form.get("phone", "")
-        phone = re.sub(r"\D", "", phone)
+        phone = re.sub(r"\D", "", request.form.get("phone", ""))
+
+        # Secondary number is optional: empty -> stored as NULL
+        phone2 = re.sub(r"\D", "", request.form.get("phone2", "")) or None
 
         cursor.execute("""
             UPDATE customers
             SET name = %s,
-                phone = %s
+                phone = %s,
+                phone2 = %s
             WHERE customer_id = %s
-        """, (name, phone, customer_id))
+        """, (name, phone, phone2, customer_id))
 
         conn.commit()
 
@@ -2958,7 +2960,7 @@ def edit_customer(customer_id):
         return redirect(url_for("find_page", mode="customer"))
 
     cursor.execute("""
-        SELECT customer_id, name, phone, balance
+        SELECT customer_id, name, phone, phone2, balance
         FROM customers
         WHERE customer_id = %s
     """, (customer_id,))
@@ -2971,8 +2973,7 @@ def edit_customer(customer_id):
     return render_template(
         "customer_edit_simple.html",
         customer=customer
-    )
-    
+    )    
 # ---------------------------------------------------------------------------
 # Account adjustment
 # ---------------------------------------------------------------------------
