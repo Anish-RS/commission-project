@@ -2954,12 +2954,16 @@ def edit_customer(customer_id):
         phone = request.form.get("phone", "")
         phone = re.sub(r"\D", "", phone)
 
+        # Secondary number is optional: empty -> stored as NULL
+        phone2 = re.sub(r"\D", "", request.form.get("phone2", "")) or None
+
         cursor.execute("""
             UPDATE customers
             SET name = %s,
-                phone = %s
+                phone = %s,
+                phone2 = %s
             WHERE customer_id = %s
-        """, (name, phone, customer_id))
+        """, (name, phone, phone2, customer_id))
 
         conn.commit()
 
@@ -2970,7 +2974,7 @@ def edit_customer(customer_id):
         return redirect(url_for("find_page", mode="customer"))
 
     cursor.execute("""
-        SELECT customer_id, name, phone, balance
+        SELECT customer_id, name, phone, phone2, balance
         FROM customers
         WHERE customer_id = %s
     """, (customer_id,))
