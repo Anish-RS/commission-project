@@ -518,7 +518,7 @@
             <div class="lh-filter-actions">
                 <button type="button" class="btn-clear-filter" id="lhClearFilter">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-                    Clear filter
+                    <span id="lhClearText">Clear filter</span>
                 </button>
             </div>
         </div>
@@ -616,7 +616,6 @@
             </div>
         </div>
 
-        {% if receipts %}
         <div class="lh-table-scroll">
         <table class="lh-table" id="lhReceiptTable">
 
@@ -660,16 +659,7 @@
 
         </table>
         </div>
-        <p class="lh-empty" id="lhNoResultsReceipts" style="display:none; padding: 2.5rem 2rem;">No receipts match the selected date.</p>
-        {% else %}
-
-        <div class="lh-empty">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><path d="M9 13h6M9 17h4"></path></svg>
-            <p class="title">No receipts yet</p>
-            <p class="sub">Receipts will appear here once they are recorded.</p>
-        </div>
-
-        {% endif %}
+        <p class="lh-empty" id="lhNoResultsReceipts" style="display:none; padding: 2.5rem 2rem;"></p>
 
     </div>
 
@@ -684,6 +674,7 @@
   var titleEl = document.getElementById('lhTitle');
   var subtitleEl = document.getElementById('lhSubtitle');
   var receiptTotal = document.getElementById('lhReceiptTotal');
+  var RECEIPTS_URL = "{{ url_for('labour_history_receipts') }}";
 
   var views = {
     labour: {
@@ -701,12 +692,15 @@
       body: document.getElementById('lhReceiptBody'),
       noResults: document.getElementById('lhNoResultsReceipts'),
       title: 'Receipt History',
-      subtitle: 'Every receipt recorded across customers and suppliers \u2014 filter by date to review any day.',
+      subtitle: 'Yesterday, today and tomorrow are shown by default \u2014 pick a date to see any other day.',
       noun: 'receipts'
     }
   };
 
   var current = 'labour';
+  var receiptsDefaultHTML = views.receipts.body.innerHTML;
+  var receiptsReq = 0;
+  var RECEIPTS_DEFAULT_HINT = 'Showing receipts from yesterday, today and tomorrow. Pick a date to view any other day.';
 
   function formatDisplay(isoStr) {
     var parts = isoStr.split('-');
@@ -720,38 +714,124 @@
     return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  function applyFilter() {
-    var selected = dateInput.value;
-    var v = views[current];
-    var visibleCount = 0;
-    var total = 0;
+  function showHint(text) {
+    hintText.textContent = text;
+    hint.classList.remove('hidden');
+  }
 
+  /* ---------- labour: client-side filter ---------- */
+  function applyLabourFilter(selected) {
+    var v = views.labour;
+    var visibleCount = 0;
     if (v.body) {
       v.body.querySelectorAll('tr').forEach(function (row) {
         var visible = !selected || row.getAttribute('data-date') === selected;
         row.classList.toggle('lh-hidden', !visible);
-        if (visible) {
-          visibleCount++;
-          total += parseFloat(row.getAttribute('data-amount')) || 0;
-        }
+        if (visible) { visibleCount++; }
       });
     }
-
     if (v.noResults) {
       v.noResults.style.display = (v.body && visibleCount === 0) ? 'block' : 'none';
     }
+    if (selected) { showHint('Showing entries for ' + formatDisplay(selected) + '.'); }
+    else { hint.classList.add('hidden'); }
+  }
 
-    if (current === 'receipts' && receiptTotal) {
-      receiptTotal.textContent = 'Total ' + formatINR(total);
-      receiptTotal.style.display = v.body ? '' : 'none';
+  /* ---------- receipts: default window + fetch by date ---------- */
+  function makeCell(cls, text) {
+    var td = document.createElement('td');
+    if (cls) { td.className = cls; }
+    if (text !== undefined) { td.textContent = text; }
+    return td;
+  }
+
+  function buildReceiptRow(r) {
+    var tr = document.createElement('tr');
+    if (r.is_today) { tr.className = 'is-today'; }
+    tr.setAttribute('data-date', r.date);
+    tr.setAttribute('data-amount', Number(r.amount).toFixed(2));
+
+    tr.appendChild(makeCell('date-col', r.date_display));
+
+    var party = makeCell('');
+    var wrap = document.createElement('div');
+    wrap.className = 'party-cell';
+    var name = document.createElement('span');
+    name.className = 'party-name';
+    name.textContent = r.party_name;
+    var pill = document.createElement('span');
+    pill.className = 'type-pill ' + (r.entity_type === 'supplier' ? 'supplier' : 'customer');
+    pill.textContent = r.entity_type;
+    wrap.appendChild(name);
+    wrap.appendChild(pill);
+    party.appendChild(wrap);
+    tr.appendChild(party);
+
+    var note = makeCell('note-col');
+    if (r.note) { note.textContent = r.note; }
+    else {
+      var sp = document.createElement('span');
+      sp.className = 'no-note';
+      sp.textContent = 'No note added';
+      note.appendChild(sp);
+    }
+    tr.appendChild(note);
+
+    var amt = makeCell('amount-col', Number(r.amount).toFixed(2));
+    amt.style.paddingRight = '1.75rem';
+    tr.appendChild(amt);
+    return tr;
+  }
+
+  function refreshReceiptsMeta(selected) {
+    var v = views.receipts;
+    var rows = v.body.querySelectorAll('tr');
+    var total = 0;
+    rows.forEach(function (row) { total += parseFloat(row.getAttribute('data-amount')) || 0; });
+
+    receiptTotal.textContent = 'Total ' + formatINR(total);
+    v.noResults.textContent = selected
+      ? 'No receipts on ' + formatDisplay(selected) + '.'
+      : 'No receipts in the last few days. Pick a date to look further back.';
+    v.noResults.style.display = rows.length === 0 ? 'block' : 'none';
+    showHint(selected ? 'Showing receipts for ' + formatDisplay(selected) + '.' : RECEIPTS_DEFAULT_HINT);
+  }
+
+  function applyReceiptsFilter(selected) {
+    var v = views.receipts;
+    var myReq = ++receiptsReq;
+
+    if (!selected) {
+      v.body.innerHTML = receiptsDefaultHTML;
+      refreshReceiptsMeta('');
+      return;
     }
 
-    if (selected) {
-      hintText.textContent = 'Showing ' + v.noun + ' for ' + formatDisplay(selected) + '.';
-      hint.classList.remove('hidden');
-    } else {
-      hint.classList.add('hidden');
-    }
+    showHint('Loading receipts for ' + formatDisplay(selected) + '\u2026');
+    fetch(RECEIPTS_URL + '?date=' + encodeURIComponent(selected), {
+      credentials: 'same-origin',
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(function (res) {
+        if (!res.ok) { throw new Error('HTTP ' + res.status); }
+        return res.json();
+      })
+      .then(function (data) {
+        if (myReq !== receiptsReq) { return; }   // a newer request replaced this one
+        v.body.innerHTML = '';
+        (data.receipts || []).forEach(function (r) { v.body.appendChild(buildReceiptRow(r)); });
+        refreshReceiptsMeta(selected);
+      })
+      .catch(function () {
+        if (myReq !== receiptsReq) { return; }
+        showHint('Could not load receipts for ' + formatDisplay(selected) + '. Please try again.');
+      });
+  }
+
+  function applyFilter() {
+    var selected = dateInput.value;
+    if (current === 'labour') { applyLabourFilter(selected); }
+    else { applyReceiptsFilter(selected); }
   }
 
   function setView(name, updateUrl) {
