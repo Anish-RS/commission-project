@@ -2599,19 +2599,11 @@ def add_labour():
 
     return render_template("labour_add.html", today=today.isoformat())
 
-@app.route("/labour/history")
-def labour_history():
-    conn = get_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-    cursor.execute("""
-        SELECT labour_id, entry_date, amount, note
-        FROM labour_entries
-        ORDER BY entry_date DESC, labour_id DESC
-        LIMIT 20
-    """)
-    entries = cursor.fetchall()
-
+def _fetch_receipts(cursor, start_day, end_day):
+    """All receipts (customers + suppliers) with tx_date between start_day and
+    end_day, both inclusive. Uses the same half-open range as cash_in_hand."""
+    start_dt = datetime.combine(start_day, time.min)
+    end_dt   = datetime.combine(end_day + timedelta(days=1), time.min)
     cursor.execute("""
         SELECT
             t.tx_id,
@@ -2623,13 +2615,32 @@ def labour_history():
         FROM transactions t
         LEFT JOIN customers c ON (t.entity_type='customer' AND t.entity_id=c.customer_id)
         LEFT JOIN suppliers s ON (t.entity_type='supplier' AND t.entity_id=s.supplier_id)
-        WHERE t.tx_type = 'receipt'
+        WHERE t.tx_type = 'receipt' AND t.tx_date >= %s AND t.tx_date < %s
         ORDER BY t.tx_date DESC, t.tx_id DESC
-        LIMIT 200
-    """)
-    receipts = cursor.fetchall()
-    for r in receipts:
+    """, (start_dt, end_dt))
+    rows = cursor.fetchall()
+    for r in rows:
         r["amount"] = float(r["amount"] or 0)
+    return rows
+
+
+@app.route("/labour/history")
+def labour_history():
+    today = ist_today()
+    conn = get_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute("""
+        SELECT labour_id, entry_date, amount, note
+        FROM labour_entries
+        ORDER BY entry_date DESC, labour_id DESC
+        LIMIT 20
+    """)
+    entries = cursor.fetchall()
+
+    # Receipts: yesterday, today and tomorrow by default (tomorrow catches
+    # post-dated receipts). Any other day is loaded on demand by the date filter.
+    receipts = _fetch_receipts(cursor, today - timedelta(days=1), today + timedelta(days=1))
 
     cursor.close()
     conn.close()
@@ -2638,9 +2649,42 @@ def labour_history():
         "labour_history.html",
         entries=entries,
         receipts=receipts,
-        today=ist_today(),
+        today=today,
         view=request.args.get("view", "labour"),
     )
+
+
+@app.route("/labour/history/receipts")
+def labour_history_receipts():
+    """JSON: receipts for one specific day (used by the date filter)."""
+    raw = (request.args.get("date") or "").strip()
+    try:
+        day = datetime.strptime(raw, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "invalid_date"}), 400
+
+    conn = get_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        rows = _fetch_receipts(cursor, day, day)
+    finally:
+        cursor.close()
+        conn.close()
+
+    today = ist_today()
+    return jsonify({"receipts": [
+        {
+            "date": r["tx_day"].isoformat(),
+            "date_display": r["tx_day"].strftime("%d %B %Y"),
+            "amount": r["amount"],
+            "note": r["note"] or "",
+            "entity_type": r["entity_type"],
+            "party_name": r["party_name"] or "Unknown",
+            "is_today": r["tx_day"] == today,
+        } for r in rows
+    ]})
+
+
 @app.route("/labour/edit/<int:labour_id>", methods=["GET", "POST"])
 def edit_labour(labour_id):
 
