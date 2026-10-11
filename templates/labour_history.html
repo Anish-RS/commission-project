@@ -390,6 +390,89 @@
 
   .lh-empty p.sub { font-size: 0.88rem; margin: 0; }
 
+
+  /* ---------- view toggle (labour / receipts) ---------- */
+  .lh-toggle {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.28rem;
+    margin-bottom: 0.9rem;
+    background: #ffffff;
+    border: 1px solid var(--card-line);
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(20,34,56,0.04);
+  }
+
+  .lh-toggle button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    padding: 0.5rem 1.15rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .lh-toggle button:hover { color: var(--text-dark); }
+
+  .lh-toggle button.active {
+    color: #f2fbf6;
+    background: linear-gradient(160deg, var(--teal-500), var(--teal-700));
+    box-shadow: 0 4px 10px -4px rgba(12,107,88,0.5);
+  }
+
+  .lh-toggle .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: var(--cream);
+    color: var(--text-muted);
+  }
+
+  .lh-toggle button.active .count {
+    background: rgba(255,255,255,0.2);
+    color: #f2fbf6;
+  }
+
+  .lh-panel.lh-panel-hidden { display: none; }
+
+  .lh-head-right { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
+
+  .lh-total-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: #f7f2e6;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .party-cell { display: flex; flex-direction: column; gap: 0.2rem; }
+  .party-name { font-weight: 600; color: var(--text-dark); }
+
+  .type-pill {
+    align-self: flex-start;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    background: var(--teal-50);
+    color: var(--teal-700);
+  }
+
+  .type-pill.supplier { background: #f6ecd2; color: #8a6a1c; }
+
   @media (max-width: 576px) {
     table.lh-table thead th,
     table.lh-table tbody td { padding-left: 1rem; padding-right: 0.85rem; }
@@ -405,9 +488,18 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><path d="M9 13h6M9 17h4"></path></svg>
         </div>
         <div>
-            <h1 class="lh-title">Labour Entries</h1>
-            <p class="lh-subtitle">Daily record of labour transactions &mdash; filter by date to review any period.</p>
+            <h1 class="lh-title" id="lhTitle">Labour Entries</h1>
+            <p class="lh-subtitle" id="lhSubtitle">Daily record of labour transactions &mdash; filter by date to review any period.</p>
         </div>
+    </div>
+
+    <div class="lh-toggle" role="tablist" aria-label="History type">
+        <button type="button" role="tab" id="lhTabLabour" data-view="labour" class="active">
+            Labour history <span class="count">{{ entries|length }}</span>
+        </button>
+        <button type="button" role="tab" id="lhTabReceipts" data-view="receipts">
+            Receipt history <span class="count">{{ receipts|length }}</span>
+        </button>
     </div>
 
     {% set today_count = entries|selectattr('entry_date', 'equalto', today)|list|length %}
@@ -436,7 +528,7 @@
         </div>
     </div>
 
-    <div class="lh-table-card">
+    <div class="lh-table-card lh-panel" id="lhPanelLabour">
 
         <div class="lh-table-head">
             <h5>Entry log</h5>
@@ -514,18 +606,107 @@
 
     </div>
 
+    <div class="lh-table-card lh-panel lh-panel-hidden" id="lhPanelReceipts">
+
+        <div class="lh-table-head">
+            <h5>Receipt log</h5>
+            <div class="lh-head-right">
+                <span class="lh-total-tag" id="lhReceiptTotal"></span>
+                <span class="lh-today-tag"><span class="lh-today-dot"></span>TODAY &middot; {{ today.strftime('%d %B %Y') if today.strftime is defined else today }}</span>
+            </div>
+        </div>
+
+        {% if receipts %}
+        <div class="lh-table-scroll">
+        <table class="lh-table" id="lhReceiptTable">
+
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Received from</th>
+                    <th>Note</th>
+                    <th class="amount-col" style="padding-right:1.75rem;">Amount</th>
+                </tr>
+            </thead>
+
+            <tbody id="lhReceiptBody">
+
+            {% for r in receipts %}
+            {% set r_iso = r.tx_day.strftime('%Y-%m-%d') if r.tx_day.strftime is defined else r.tx_day %}
+            {% set r_display = r.tx_day.strftime('%d %B %Y') if r.tx_day.strftime is defined else r.tx_day %}
+
+            <tr class="{{ 'is-today' if r.tx_day == today else '' }}" data-date="{{ r_iso }}" data-amount="{{ '%.2f'|format(r.amount) }}">
+
+                <td class="date-col">{{ r_display }}</td>
+
+                <td>
+                    <div class="party-cell">
+                        <span class="party-name">{{ r.party_name or 'Unknown' }}</span>
+                        <span class="type-pill {{ r.entity_type }}">{{ r.entity_type }}</span>
+                    </div>
+                </td>
+
+                <td class="note-col">
+                    {% if r.note %}{{ r.note }}{% else %}<span class="no-note">No note added</span>{% endif %}
+                </td>
+
+                <td class="amount-col" style="padding-right:1.75rem;">{{ "%.2f"|format(r.amount) }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+        </div>
+        <p class="lh-empty" id="lhNoResultsReceipts" style="display:none; padding: 2.5rem 2rem;">No receipts match the selected date.</p>
+        {% else %}
+
+        <div class="lh-empty">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><path d="M9 13h6M9 17h4"></path></svg>
+            <p class="title">No receipts yet</p>
+            <p class="sub">Receipts will appear here once they are recorded.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
 </div>
 
 <script>
 (function () {
   var dateInput = document.getElementById('lhDate');
   var clearBtn = document.getElementById('lhClearFilter');
-  var tbody = document.getElementById('lhTableBody');
   var hint = document.getElementById('lhFilterHint');
   var hintText = document.getElementById('lhFilterHintText');
-  var noResults = document.getElementById('lhNoResults');
+  var titleEl = document.getElementById('lhTitle');
+  var subtitleEl = document.getElementById('lhSubtitle');
+  var receiptTotal = document.getElementById('lhReceiptTotal');
 
-  if (!tbody) { return; }
+  var views = {
+    labour: {
+      tab: document.getElementById('lhTabLabour'),
+      panel: document.getElementById('lhPanelLabour'),
+      body: document.getElementById('lhTableBody'),
+      noResults: document.getElementById('lhNoResults'),
+      title: 'Labour Entries',
+      subtitle: 'Daily record of labour transactions \u2014 filter by date to review any period.',
+      noun: 'entries'
+    },
+    receipts: {
+      tab: document.getElementById('lhTabReceipts'),
+      panel: document.getElementById('lhPanelReceipts'),
+      body: document.getElementById('lhReceiptBody'),
+      noResults: document.getElementById('lhNoResultsReceipts'),
+      title: 'Receipt History',
+      subtitle: 'Every receipt recorded across customers and suppliers \u2014 filter by date to review any day.',
+      noun: 'receipts'
+    }
+  };
+
+  var current = 'labour';
 
   function formatDisplay(isoStr) {
     var parts = isoStr.split('-');
@@ -535,29 +716,67 @@
     return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
   }
 
+  function formatINR(n) {
+    return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   function applyFilter() {
     var selected = dateInput.value;
-    var rows = tbody.querySelectorAll('tr');
+    var v = views[current];
     var visibleCount = 0;
+    var total = 0;
 
-    rows.forEach(function (row) {
-      var rowDate = row.getAttribute('data-date');
-      var visible = !selected || rowDate === selected;
-      row.classList.toggle('lh-hidden', !visible);
-      if (visible) { visibleCount++; }
-    });
+    if (v.body) {
+      v.body.querySelectorAll('tr').forEach(function (row) {
+        var visible = !selected || row.getAttribute('data-date') === selected;
+        row.classList.toggle('lh-hidden', !visible);
+        if (visible) {
+          visibleCount++;
+          total += parseFloat(row.getAttribute('data-amount')) || 0;
+        }
+      });
+    }
 
-    if (noResults) {
-      noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    if (v.noResults) {
+      v.noResults.style.display = (v.body && visibleCount === 0) ? 'block' : 'none';
+    }
+
+    if (current === 'receipts' && receiptTotal) {
+      receiptTotal.textContent = 'Total ' + formatINR(total);
+      receiptTotal.style.display = v.body ? '' : 'none';
     }
 
     if (selected) {
-      hintText.textContent = 'Showing entries for ' + formatDisplay(selected) + '.';
+      hintText.textContent = 'Showing ' + v.noun + ' for ' + formatDisplay(selected) + '.';
       hint.classList.remove('hidden');
     } else {
       hint.classList.add('hidden');
     }
   }
+
+  function setView(name, updateUrl) {
+    current = name;
+    Object.keys(views).forEach(function (key) {
+      var on = key === name;
+      views[key].tab.classList.toggle('active', on);
+      views[key].tab.setAttribute('aria-selected', on ? 'true' : 'false');
+      views[key].panel.classList.toggle('lh-panel-hidden', !on);
+    });
+    titleEl.textContent = views[name].title;
+    subtitleEl.textContent = views[name].subtitle;
+
+    if (updateUrl && window.history && history.replaceState) {
+      var url = new URL(window.location.href);
+      if (name === 'labour') { url.searchParams.delete('view'); }
+      else { url.searchParams.set('view', name); }
+      history.replaceState(null, '', url);
+    }
+    applyFilter();
+  }
+
+  Object.keys(views).forEach(function (key) {
+    views[key].tab.addEventListener('click', function () { setView(key, true); });
+  });
 
   dateInput.addEventListener('change', applyFilter);
 
@@ -565,6 +784,8 @@
     dateInput.value = '';
     applyFilter();
   });
+
+  setView('{{ view|default("labour") }}' === 'receipts' ? 'receipts' : 'labour', false);
 })();
 </script>
 
