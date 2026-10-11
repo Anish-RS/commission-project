@@ -3531,11 +3531,9 @@ def transactions_list():
 
         for r in rows:
             dt = r.get("tx_date")
-            if isinstance(dt, datetime):
-                r["tx_date"] = (dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None
-                                else dt.astimezone(timezone.utc)).isoformat()
-            elif isinstance(dt, date):
-                r["tx_date"] = datetime.combine(dt, time.min).isoformat()
+            if isinstance(dt, (datetime, date)):
+                # plain calendar date, no timezone, so every browser shows the same day
+                r["tx_date"] = dt.strftime("%Y-%m-%d")
             else:
                 r["tx_date"] = None
             r["amount"] = float(r.get("amount") or 0.0)
