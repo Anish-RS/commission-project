@@ -2627,6 +2627,14 @@ def _fetch_receipts(cursor, start_day, end_day):
 @app.route("/labour/history")
 def labour_history():
     today = ist_today()
+
+    # optional ?date=YYYY-MM-DD so the page can reopen on the same filtered day
+    selected_date = (request.args.get("date") or "").strip()
+    try:
+        datetime.strptime(selected_date, "%Y-%m-%d")
+    except ValueError:
+        selected_date = ""
+
     conn = get_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -2651,6 +2659,7 @@ def labour_history():
         receipts=receipts,
         today=today,
         view=request.args.get("view", "labour"),
+        selected_date=selected_date,
     )
 
 
@@ -2674,6 +2683,7 @@ def labour_history_receipts():
     today = ist_today()
     return jsonify({"receipts": [
         {
+            "tx_id": r["tx_id"],
             "date": r["tx_day"].isoformat(),
             "date_display": r["tx_day"].strftime("%d %B %Y"),
             "amount": r["amount"],
