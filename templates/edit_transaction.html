@@ -1133,7 +1133,7 @@ hr { display: none; }
           tr.style.animationDelay = (i * 0.03) + 's';
 
           const date = t.tx_date
-            ? new Date(t.tx_date).toLocaleDateString('en-GB')
+            ? t.tx_date.slice(0, 10).split('-').reverse().join('/')   // YYYY-MM-DD -> DD/MM/YYYY (no timezone conversion)
             : '—';
 
           tr.innerHTML = `
