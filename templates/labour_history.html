@@ -4,558 +4,113 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-  .lh-page {
-    --navy-950: #0e1a2e;
-    --navy-900: #142238;
-    --navy-800: #1b2f4d;
-    --cream: #f4efe2;
-    --cream-deep: #ede6d4;
-    --card-line: #e7e0cd;
-    --teal-700: #0c6b58;
-    --teal-600: #0f8f74;
-    --teal-500: #16a087;
-    --teal-50: #e5f4ef;
-    --gold: #c9a24a;
-    --text-dark: #16233a;
-    --text-muted: #7c8698;
-    --text-faint: #a4adba;
-    font-family: 'Inter', -apple-system, sans-serif;
-    max-width: 1080px;
-    margin: 1.5rem auto 3rem;
-    padding: 0 1rem;
+  .lh-page{--f9:#0c2a20;--f8:#123a2c;--f7:#1a4a39;--f6:#24604b;--gold:#b8923c;--gold-d:#8a6a1c;--gold-t:#f5ecd0;--cream:#f6f1e4;--paper:#fffdf7;--rule:#e4dcc6;--ink:#17261f;--muted:#6b766e;--faint:#9aa39c;font-family:'Inter',-apple-system,sans-serif;max-width:1080px;margin:1.5rem auto 3rem;padding:0 1rem;color:var(--ink)}
+  .lh-page *:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+  /* header */
+  .lh-header-row{display:flex;align-items:center;gap:.9rem;margin-bottom:1.25rem}
+  .lh-icon-badge{flex:none;width:46px;height:46px;border-radius:12px;background:var(--f8);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 20px -12px rgba(12,42,32,.7),inset 0 0 0 3px var(--f8),inset 0 0 0 4px rgba(184,146,60,.55)}
+  .lh-icon-badge svg{color:#e9d9a8}
+  .lh-title{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.55rem,2.8vw,2rem);margin:0;letter-spacing:-.015em;line-height:1.15;color:var(--ink)}
+  .lh-subtitle{font-size:.88rem;color:var(--muted);margin:.2rem 0 0}
+
+  /* tabs */
+  .lh-toggle{display:flex;gap:1.6rem;margin-bottom:1rem;border-bottom:1px solid var(--rule)}
+  .lh-toggle button{display:inline-flex;align-items:center;gap:.5rem;font:600 .9rem 'Inter',sans-serif;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:.7rem .1rem;cursor:pointer;transition:color .15s,border-color .15s}
+  .lh-toggle button:hover{color:var(--ink)}
+  .lh-toggle button.active{color:var(--f8);border-bottom-color:var(--gold)}
+  .lh-toggle .count{font:500 .72rem 'IBM Plex Mono',monospace;padding:.1rem .5rem;border-radius:999px;background:var(--cream);color:var(--muted);border:1px solid var(--rule)}
+  .lh-toggle button.active .count{background:var(--f8);color:#e9d9a8;border-color:var(--f8)}
+  .lh-panel.lh-panel-hidden{display:none}
+
+  /* filter */
+  .lh-filter-card{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1rem}
+  .lh-filter-grid{display:flex;gap:.9rem;flex-wrap:wrap;align-items:flex-end}
+  .lh-field{display:flex;flex-direction:column;gap:.3rem;flex:0 1 220px}
+  .lh-field label{font-size:.78rem;font-weight:600;color:var(--muted)}
+  .lh-input-wrap{position:relative;display:flex;align-items:center}
+  .lh-input-wrap svg.field-icon{position:absolute;left:12px;color:var(--gold-d);pointer-events:none}
+  .lh-input-wrap input[type="date"]{width:100%;font:.88rem 'IBM Plex Mono',monospace;color:var(--ink);background:var(--cream);border:1px solid var(--rule);border-radius:10px;padding:.5rem .75rem .5rem 2.4rem;outline:none;transition:border-color .15s,box-shadow .15s}
+  .lh-input-wrap input[type="date"]:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,146,60,.2)}
+  .lh-filter-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+  .btn-clear-filter,.lh-chip{display:inline-flex;align-items:center;gap:.35rem;font:600 .8rem 'Inter',sans-serif;color:var(--muted);background:transparent;border:1px solid var(--rule);border-radius:999px;padding:.5rem .95rem;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+  .btn-clear-filter:hover,.lh-chip:hover{background:var(--cream);color:var(--ink)}
+  .lh-chip.active{background:var(--f8);border-color:var(--f8);color:#f3e7c2}
+  .lh-filter-hint{margin-top:.7rem;display:flex;align-items:center;gap:.45rem;font-size:.8rem;color:var(--f6)}
+  .lh-filter-hint.hidden{display:none}
+
+  /* ledger card */
+  .lh-table-card{background:var(--paper);border:1px solid var(--rule);border-radius:16px;overflow:hidden;box-shadow:0 18px 40px -28px rgba(12,42,32,.45);transition:opacity .15s}
+  .lh-table-card.is-loading{opacity:.55;pointer-events:none}
+  .lh-table-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.1rem 1.75rem;background:var(--f9);border-bottom:2px solid var(--gold);color:#f3ead0}
+  .lh-table-head h5{font:500 1.1rem 'Fraunces',serif;margin:0;color:#f7f0da}
+  .lh-today-tag{font:500 .78rem 'IBM Plex Mono',monospace;color:#d9c88f;display:flex;align-items:center;gap:.5rem}
+  .lh-today-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(184,146,60,.25)}
+  .lh-table-scroll{overflow:auto;max-height:68vh}
+  table.lh-table{width:100%;border-collapse:separate;border-spacing:0;margin:0;min-width:520px}
+  table.lh-table thead th{position:sticky;top:0;z-index:2;font-size:.78rem;color:var(--muted);font-weight:600;text-align:left;padding:.85rem 1.35rem;border-bottom:1px solid var(--rule);background:var(--cream)}
+  table.lh-table thead th:first-child,table.lh-table tbody td:first-child{padding-left:1.75rem}
+  table.lh-table .amount-col{text-align:right}
+  table.lh-table .status-col{text-align:right;padding-right:1.75rem}
+  table.lh-table tbody td{padding:.95rem 1.35rem;border-bottom:1px solid var(--rule);font-size:.92rem;vertical-align:middle}
+  table.lh-table tbody tr:last-child td{border-bottom:0}
+  table.lh-table tbody tr{transition:background-color .15s}
+  table.lh-table tbody tr:hover{background:var(--cream)}
+  table.lh-table tbody tr.is-today{background:var(--gold-t);box-shadow:inset 3px 0 0 var(--f7)}
+  table.lh-table tbody tr.is-today:hover{background:#f0e4bd}
+  table.lh-table tbody tr.lh-hidden{display:none}
+  td.date-col{font:500 .84rem 'IBM Plex Mono',monospace;color:var(--f8);white-space:nowrap}
+  td.amount-col{font:600 .95rem 'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.amount-col::before{content:"\20B9";margin-right:3px;color:var(--gold-d);font-weight:500}
+  td.note-col{max-width:320px}
+  td.note-col .no-note{color:var(--faint);font-style:italic;font-size:.85rem}
+
+  /* ledger total: pinned, closed with a double rule */
+  table.lh-table tfoot td{position:sticky;bottom:0;background:var(--cream);padding:.95rem 1.35rem;border-top:1px solid var(--f8)}
+  table.lh-table tfoot td:first-child{padding-left:1.75rem}
+  td.lh-total-label{font-size:.88rem;font-weight:600;color:var(--f8)}
+  td.lh-total-amt{font-size:1.08rem;color:var(--f9);border-bottom:3px double var(--f8)}
+
+  .status-pill{display:inline-flex;align-items:center;gap:.35rem;font:500 .74rem 'Inter',sans-serif;padding:.3rem .7rem;border-radius:999px;color:var(--faint);background:var(--cream);border:1px solid var(--rule)}
+  .btn-edit-entry{display:inline-flex;align-items:center;gap:.4rem;font:600 .8rem 'Inter',sans-serif;color:#f3e7c2;background:var(--f8);border:1px solid var(--f8);border-radius:999px;padding:.45rem 1rem;text-decoration:none;cursor:pointer;transition:background .15s,transform .12s,box-shadow .12s}
+  .btn-edit-entry:hover{color:#fff6d8;background:var(--f7);transform:translateY(-1px);box-shadow:0 8px 14px -8px rgba(12,42,32,.7)}
+  .lh-empty{padding:3.5rem 2rem;text-align:center;color:var(--muted)}
+  .lh-empty svg{color:var(--gold);margin-bottom:.85rem}
+  .lh-empty p.title{font:500 1.2rem 'Fraunces',serif;color:var(--ink);margin-bottom:.3rem}
+  .lh-empty p.sub{font-size:.88rem;margin:0}
+  .party-cell{display:flex;flex-direction:column;gap:.25rem}
+  .party-name{font-weight:600}
+  .type-pill{align-self:flex-start;font-size:.72rem;font-weight:600;padding:.1rem .55rem;border-radius:999px;background:#e3efe8;color:var(--f6);text-transform:capitalize}
+  .type-pill.supplier{background:#f5ecd0;color:var(--gold-d)}
+
+  /* edit modal */
+  .lh-modal-backdrop{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:1rem;background:rgba(12,42,32,.55);backdrop-filter:blur(3px)}
+  .lh-modal-backdrop.open{display:flex;animation:lhFade .18s ease}
+  .lh-modal{width:100%;max-width:420px;background:var(--paper);border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -25px rgba(12,42,32,.7);animation:lhPop .2s ease}
+  .lh-modal-head{padding:1.05rem 1.4rem;background:var(--f9);border-bottom:2px solid var(--gold);color:#f7f0da;font:500 1.1rem 'Fraunces',serif}
+  .lh-modal-body{padding:1.2rem 1.4rem .4rem;display:flex;flex-direction:column;gap:.9rem}
+  .lh-modal-body label{display:block;margin-bottom:.3rem;font-size:.78rem;font-weight:600;color:var(--muted)}
+  .lh-modal-body input{width:100%;font:.92rem 'Inter',sans-serif;color:var(--ink);background:var(--cream);border:1px solid var(--rule);border-radius:10px;padding:.55rem .8rem;outline:none}
+  .lh-modal-body input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,146,60,.2)}
+  .lh-modal-body input[readonly]{color:var(--muted);background:#f0ebdc;cursor:not-allowed}
+  .lh-modal-body #lhEditAmount,.lh-modal-body #lhEditDate{font-family:'IBM Plex Mono',monospace}
+  .lh-modal-error{min-height:1.1rem;font-size:.82rem;color:#a4281f}
+  .lh-modal-actions{display:flex;justify-content:flex-end;gap:.6rem;padding:.6rem 1.4rem 1.2rem}
+  .lh-modal-actions .btn-save{padding:.55rem 1.4rem}
+  .lh-modal-actions .btn-save[disabled]{opacity:.6;cursor:wait}
+  @keyframes lhFade{from{opacity:0}}
+  @keyframes lhPop{from{opacity:0;transform:translateY(8px) scale(.98)}}
+
+  @media (max-width:576px){
+    table.lh-table thead th,table.lh-table tbody td,table.lh-table tfoot td{padding-left:1rem;padding-right:.85rem}
+    .lh-table-head{padding:1rem 1.25rem;flex-wrap:wrap}
+    .lh-field{flex:1 1 100%}
+    .lh-toggle{gap:1.1rem}
   }
-
-  /* ---------- header ---------- */
-  .lh-header-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.85rem;
-    margin-bottom: 1.1rem;
-  }
-
-  .lh-icon-badge {
-    flex: none;
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
-    background: linear-gradient(155deg, var(--teal-500), var(--teal-700));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 18px -8px rgba(15,143,116,0.55);
-  }
-
-  .lh-icon-badge svg { color: #eafff9; }
-
-  .lh-title {
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: clamp(1.5rem, 2.6vw, 1.85rem);
-    color: var(--text-dark);
-    margin: 0.1rem 0 0.05rem;
-    letter-spacing: -0.01em;
-  }
-
-  .lh-subtitle {
-    font-size: 0.86rem;
-    color: var(--text-muted);
-    margin: 0;
-  }
-
-  /* ---------- stat cards ---------- */
-  .lh-stats {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-bottom: 0.9rem;
-  }
-
-  .lh-stat {
-    flex: 1 1 180px;
-    background: #ffffff;
-    border: 1px solid var(--card-line);
-    border-radius: 14px;
-    padding: 0.75rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    box-shadow: 0 1px 2px rgba(20,34,56,0.04);
-  }
-
-  .lh-stat .icon-wrap {
-    flex: none;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: var(--teal-50);
-    color: var(--teal-700);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .lh-stat .num {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    display: block;
-    line-height: 1.2;
-  }
-
-  .lh-stat .lbl {
-    font-size: 0.68rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 600;
-  }
-
-  /* ---------- filter card ---------- */
-  .lh-filter-card {
-    background: #ffffff;
-    border: 1px solid var(--card-line);
-    border-radius: 16px;
-    padding: 0.9rem 1.1rem;
-    margin-bottom: 0.9rem;
-    box-shadow: 0 1px 2px rgba(20,34,56,0.04);
-  }
-
-  .lh-filter-grid {
-    display: flex;
-    gap: 0.85rem;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .lh-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    flex: 0 1 220px;
-  }
-
-  .lh-field label {
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    color: var(--text-muted);
-  }
-
-  .lh-input-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .lh-input-wrap svg.field-icon {
-    position: absolute;
-    left: 12px;
-    color: var(--text-muted);
-    pointer-events: none;
-  }
-
-  .lh-input-wrap input[type="date"] {
-    width: 100%;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.85rem;
-    color: var(--text-dark);
-    background: var(--cream);
-    border: 1px solid var(--card-line);
-    border-radius: 10px;
-    padding: 0.5rem 0.75rem 0.5rem 2.4rem;
-    outline: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .lh-input-wrap input[type="date"]:focus {
-    border-color: var(--teal-500);
-    box-shadow: 0 0 0 3px rgba(22,160,135,0.15);
-  }
-
-  .lh-filter-actions {
-    display: flex;
-    gap: 0.6rem;
-    flex: none;
-    align-self: flex-end;
-  }
-
-  .btn-clear-filter {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    background: var(--cream);
-    border: 1px solid var(--card-line);
-    border-radius: 999px;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-
-  .btn-clear-filter:hover {
-    background: var(--cream-deep);
-    color: var(--text-dark);
-  }
-
-  .lh-filter-hint {
-    margin-top: 0.6rem;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.78rem;
-    color: var(--teal-700);
-  }
-
-  .lh-filter-hint.hidden { display: none; }
-
-  /* ---------- table card ---------- */
-  .lh-table-card {
-    background: #ffffff;
-    border: 1px solid var(--card-line);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 1px 2px rgba(20,34,56,0.04);
-  }
-
-  .lh-table-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1.25rem 1.75rem;
-    background: linear-gradient(135deg, var(--navy-800), var(--navy-950));
-    color: #f2ede1;
-  }
-
-  .lh-table-head h5 {
-    font-family: 'Fraunces', serif;
-    font-weight: 500;
-    font-size: 1.05rem;
-    margin: 0;
-    color: #f7f2e6;
-  }
-
-  .lh-today-tag {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    color: #a9d8c8;
-    letter-spacing: 0.05em;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-
-  .lh-today-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #6fd39a;
-    box-shadow: 0 0 0 3px rgba(111,211,154,0.2), 0 0 6px rgba(111,211,154,0.7);
-  }
-
-  .lh-table-scroll { overflow-x: auto; }
-
-  table.lh-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0;
-  }
-
-  table.lh-table thead th {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-    color: var(--text-muted);
-    font-weight: 700;
-    text-align: left;
-    padding: 0.95rem 1.35rem;
-    border-bottom: 1px solid var(--card-line);
-    background: var(--cream);
-  }
-
-  table.lh-table thead th:first-child { padding-left: 1.75rem; }
-  table.lh-table thead th.amount-col,
-  table.lh-table td.amount-col { text-align: right; }
-  table.lh-table thead th.status-col,
-  table.lh-table td.status-col { text-align: right; padding-right: 1.75rem; }
-
-  table.lh-table tbody td {
-    padding: 1rem 1.35rem;
-    border-bottom: 1px solid var(--card-line);
-    color: var(--text-dark);
-    font-size: 0.92rem;
-    vertical-align: middle;
-  }
-
-  table.lh-table tbody td:first-child { padding-left: 1.75rem; }
-  table.lh-table tbody tr:last-child td { border-bottom: none; }
-  table.lh-table tbody tr { transition: background-color 0.15s ease; }
-  table.lh-table tbody tr:hover { background: var(--cream); }
-
-  table.lh-table tbody tr.is-today {
-    background: var(--teal-50);
-    box-shadow: inset 3px 0 0 var(--teal-600);
-  }
-
-  table.lh-table tbody tr.is-today:hover { background: #d9f0e8; }
-
-  table.lh-table tbody tr.lh-hidden { display: none; }
-
-  td.date-col {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.84rem;
-    color: var(--navy-900);
-    white-space: nowrap;
-    font-weight: 500;
-  }
-
-  td.amount-col {
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 700;
-    color: var(--text-dark);
-    white-space: nowrap;
-    font-size: 0.95rem;
-  }
-
-  td.amount-col::before {
-    content: "\20B9";
-    margin-right: 2px;
-    color: var(--teal-700);
-    font-weight: 600;
-  }
-
-  td.note-col { color: var(--text-dark); max-width: 320px; }
-  td.note-col .no-note { color: var(--text-faint); font-style: italic; font-size: 0.85rem; }
-
-  .status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
-    letter-spacing: 0.04em;
-    padding: 0.35rem 0.75rem;
-    border-radius: 999px;
-    text-transform: uppercase;
-    font-weight: 600;
-    color: var(--text-muted);
-    background: var(--cream);
-    border: 1px solid var(--card-line);
-  }
-
-  .btn-edit-entry {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #f2fbf6;
-    background: linear-gradient(160deg, var(--teal-500), var(--teal-700));
-    border: 1px solid var(--teal-700);
-    border-radius: 999px;
-    padding: 0.45rem 1rem;
-    text-decoration: none;
-    box-shadow: 0 4px 10px -4px rgba(12,107,88,0.5);
-    transition: transform 0.12s ease, box-shadow 0.12s ease;
-  }
-
-  .btn-edit-entry:hover {
-    color: #f2fbf6;
-    transform: translateY(-1px);
-    box-shadow: 0 7px 14px -5px rgba(12,107,88,0.55);
-  }
-
-  .lh-empty {
-    padding: 3.5rem 2rem;
-    text-align: center;
-    color: var(--text-muted);
-  }
-
-  .lh-empty svg { color: var(--teal-500); margin-bottom: 0.85rem; }
-
-  .lh-empty p.title {
-    font-family: 'Fraunces', serif;
-    font-size: 1.15rem;
-    color: var(--text-dark);
-    margin-bottom: 0.3rem;
-  }
-
-  .lh-empty p.sub { font-size: 0.88rem; margin: 0; }
-
-
-  /* ---------- view toggle (labour / receipts) ---------- */
-  .lh-toggle {
-    display: inline-flex;
-    gap: 0.25rem;
-    padding: 0.28rem;
-    margin-bottom: 0.9rem;
-    background: #ffffff;
-    border: 1px solid var(--card-line);
-    border-radius: 999px;
-    box-shadow: 0 1px 2px rgba(20,34,56,0.04);
-  }
-
-  .lh-toggle button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    background: transparent;
-    border: none;
-    border-radius: 999px;
-    padding: 0.5rem 1.15rem;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .lh-toggle button:hover { color: var(--text-dark); }
-
-  .lh-toggle button.active {
-    color: #f2fbf6;
-    background: linear-gradient(160deg, var(--teal-500), var(--teal-700));
-    box-shadow: 0 4px 10px -4px rgba(12,107,88,0.5);
-  }
-
-  .lh-toggle .count {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
-    padding: 0.1rem 0.45rem;
-    border-radius: 999px;
-    background: var(--cream);
-    color: var(--text-muted);
-  }
-
-  .lh-toggle button.active .count {
-    background: rgba(255,255,255,0.2);
-    color: #f2fbf6;
-  }
-
-  .lh-panel.lh-panel-hidden { display: none; }
-
-  .lh-head-right { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
-
-  .lh-total-tag {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
-    color: #f7f2e6;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 999px;
-    padding: 0.25rem 0.75rem;
-  }
-
-  .party-cell { display: flex; flex-direction: column; gap: 0.2rem; }
-  .party-name { font-weight: 600; color: var(--text-dark); }
-
-  .type-pill {
-    align-self: flex-start;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.62rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    font-weight: 600;
-    padding: 0.12rem 0.5rem;
-    border-radius: 999px;
-    background: var(--teal-50);
-    color: var(--teal-700);
-  }
-
-  .type-pill.supplier { background: #f6ecd2; color: #8a6a1c; }
-
-  /* ---------- receipt edit modal ---------- */
-  button.btn-edit-entry { cursor: pointer; }
-
-  .lh-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 2000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    background: rgba(14,26,46,0.55);
-  }
-
-  .lh-modal-backdrop.open { display: flex; }
-
-  .lh-modal {
-    width: 100%;
-    max-width: 420px;
-    background: #ffffff;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 24px 60px -20px rgba(14,26,46,0.6);
-  }
-
-  .lh-modal-head {
-    padding: 1rem 1.4rem;
-    background: linear-gradient(135deg, var(--navy-800), var(--navy-950));
-    color: #f7f2e6;
-    font-family: 'Fraunces', serif;
-    font-size: 1.05rem;
-    font-weight: 500;
-  }
-
-  .lh-modal-body { padding: 1.2rem 1.4rem 0.4rem; display: flex; flex-direction: column; gap: 0.85rem; }
-
-  .lh-modal-body label {
-    display: block;
-    margin-bottom: 0.3rem;
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    color: var(--text-muted);
-  }
-
-  .lh-modal-body input {
-    width: 100%;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.9rem;
-    color: var(--text-dark);
-    background: var(--cream);
-    border: 1px solid var(--card-line);
-    border-radius: 10px;
-    padding: 0.55rem 0.8rem;
-    outline: none;
-  }
-
-  .lh-modal-body input:focus {
-    border-color: var(--teal-500);
-    box-shadow: 0 0 0 3px rgba(22,160,135,0.15);
-  }
-
-  .lh-modal-body input[readonly] { color: var(--text-muted); cursor: not-allowed; }
-
-  .lh-modal-error { min-height: 1.1rem; font-size: 0.8rem; color: #b3261e; }
-
-  .lh-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.6rem;
-    padding: 0.6rem 1.4rem 1.2rem;
-  }
-
-  .lh-modal-actions .btn-save { border: 1px solid var(--teal-700); font-size: 0.82rem; padding: 0.5rem 1.3rem; cursor: pointer; }
-  .lh-modal-actions .btn-save[disabled] { opacity: 0.6; cursor: wait; }
-
-  @media (max-width: 576px) {
-    table.lh-table thead th,
-    table.lh-table tbody td { padding-left: 1rem; padding-right: 0.85rem; }
-    .lh-table-head { padding: 1.1rem 1.25rem; flex-wrap: wrap; }
-    .lh-filter-card { padding: 1.25rem; }
-  }
+  @media (prefers-reduced-motion:reduce){.lh-page *,.lh-modal,.lh-modal-backdrop{animation:none!important;transition:none!important}}
 </style>
 
 <div class="lh-page">
@@ -593,6 +148,8 @@
                 </div>
             </div>
             <div class="lh-filter-actions">
+                <button type="button" class="lh-chip" id="lhChipToday">Today</button>
+                <button type="button" class="lh-chip" id="lhChipYesterday">Yesterday</button>
                 <button type="button" class="btn-clear-filter" id="lhClearFilter">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
                     <span id="lhClearText">Clear filter</span>
@@ -609,7 +166,7 @@
 
         <div class="lh-table-head">
             <h5>Entry log</h5>
-            <span class="lh-today-tag"><span class="lh-today-dot"></span>TODAY &middot; {{ today.strftime('%d %B %Y') if today.strftime is defined else today }}</span>
+            <span class="lh-today-tag"><span class="lh-today-dot"></span>Today, {{ today.strftime('%d %B %Y') if today.strftime is defined else today }}</span>
         </div>
 
         {% if entries %}
@@ -668,6 +225,8 @@
 
             </tbody>
 
+            <tfoot id="lhFootLabour"><tr class="lh-total"><td colspan="2" class="lh-total-label"></td><td class="amount-col lh-total-amt"></td><td class="status-col"></td></tr></tfoot>
+
         </table>
         </div>
         <p class="lh-empty" id="lhNoResults" style="display:none; padding: 2.5rem 2rem;">No entries match the selected date.</p>
@@ -687,7 +246,7 @@
 
         <div class="lh-table-head">
             <h5>Receipt log</h5>
-            <span class="lh-today-tag"><span class="lh-today-dot"></span>TODAY &middot; {{ today.strftime('%d %B %Y') if today.strftime is defined else today }}</span>
+            <span class="lh-today-tag"><span class="lh-today-dot"></span>Today, {{ today.strftime('%d %B %Y') if today.strftime is defined else today }}</span>
         </div>
 
         <div class="lh-table-scroll">
@@ -739,6 +298,8 @@
 
             </tbody>
 
+            <tfoot id="lhFootReceipts"><tr class="lh-total"><td colspan="3" class="lh-total-label"></td><td class="amount-col lh-total-amt"></td><td class="status-col"></td></tr></tfoot>
+
         </table>
         </div>
         <p class="lh-empty" id="lhNoResultsReceipts" style="display:none; padding: 2.5rem 2rem;"></p>
@@ -766,7 +327,7 @@
                     <label for="lhEditNote">Note</label>
                     <input type="text" id="lhEditNote" maxlength="200">
                 </div>
-                <div class="lh-modal-error" id="lhEditError"></div>
+                <div class="lh-modal-error" id="lhEditError" role="alert"></div>
             </div>
             <div class="lh-modal-actions">
                 <button type="button" class="btn-clear-filter" id="lhEditCancel">Cancel</button>
@@ -787,6 +348,46 @@
   var subtitleEl = document.getElementById('lhSubtitle');
   var initialDate = "{{ selected_date|default('') }}";
   var RECEIPTS_URL = "{{ url_for('labour_history_receipts') }}";
+  var TODAY = "{{ today.strftime('%Y-%m-%d') if today.strftime is defined else today }}";
+  var chipToday = document.getElementById('lhChipToday');
+  var chipYest = document.getElementById('lhChipYesterday');
+  var datesOk = /^\d{4}-\d{2}-\d{2}$/.test(TODAY);
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function isoShift(iso, days) {
+    var p = iso.split('-');
+    var d = new Date(+p[0], +p[1] - 1, +p[2] + days);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  var YESTERDAY = datesOk ? isoShift(TODAY, -1) : '';
+  if (!datesOk) { chipToday.style.display = 'none'; chipYest.style.display = 'none'; }
+  function fmtAmt(n) { return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function parseAmt(t) { return parseFloat(String(t).replace(/,/g, '')) || 0; }
+  function formatAmounts(root) {
+    if (!root) { return; }
+    root.querySelectorAll('td.amount-col').forEach(function (td) { td.textContent = fmtAmt(parseAmt(td.textContent)); });
+  }
+  function updateTotals(name) {
+    var v = views[name];
+    var foot = document.getElementById(name === 'labour' ? 'lhFootLabour' : 'lhFootReceipts');
+    if (!foot || !v.body) { return; }
+    var total = 0, count = 0;
+    v.body.querySelectorAll('tr').forEach(function (r) {
+      if (r.classList.contains('lh-hidden')) { return; }
+      var c = r.querySelector('td.amount-col');
+      if (c) { total += parseAmt(c.textContent); }
+      count++;
+    });
+    var words = name === 'labour' ? ['entry', 'entries'] : ['receipt', 'receipts'];
+    foot.style.display = count ? '' : 'none';
+    foot.querySelector('.lh-total-label').textContent = 'Total for ' + count + ' ' + (count === 1 ? words[0] : words[1]);
+    foot.querySelector('.lh-total-amt').textContent = fmtAmt(total);
+  }
+  function syncChips() {
+    var val = dateInput.value;
+    chipToday.classList.toggle('active', datesOk && val === TODAY);
+    chipYest.classList.toggle('active', datesOk && val === YESTERDAY);
+  }
+
 
   var views = {
     labour: {
@@ -841,6 +442,7 @@
     if (v.noResults) {
       v.noResults.style.display = (v.body && visibleCount === 0) ? 'block' : 'none';
     }
+    updateTotals('labour');
     if (selected) { showHint('Showing entries for ' + formatDisplay(selected) + '.'); }
     else { hint.classList.add('hidden'); }
   }
@@ -890,7 +492,7 @@
     }
     tr.appendChild(note);
 
-    tr.appendChild(makeCell('amount-col', Number(r.amount).toFixed(2)));
+    tr.appendChild(makeCell('amount-col', fmtAmt(r.amount)));
 
     var action = makeCell('status-col');
     var btn = document.createElement('button');
@@ -909,6 +511,7 @@
       ? 'No receipts on ' + formatDisplay(selected) + '.'
       : 'No receipts in the last few days. Pick a date to look further back.';
     v.noResults.style.display = rows.length === 0 ? 'block' : 'none';
+    updateTotals('receipts');
     showHint(selected ? 'Showing receipts for ' + formatDisplay(selected) + '.' : RECEIPTS_DEFAULT_HINT);
   }
 
@@ -917,12 +520,15 @@
     var myReq = ++receiptsReq;
 
     if (!selected) {
+      v.panel.classList.remove('is-loading');
       v.body.innerHTML = receiptsDefaultHTML;
+      formatAmounts(v.body);
       refreshReceiptsMeta('');
       return;
     }
 
     showHint('Loading receipts for ' + formatDisplay(selected) + '\u2026');
+    v.panel.classList.add('is-loading');
     fetch(RECEIPTS_URL + '?date=' + encodeURIComponent(selected), {
       credentials: 'same-origin',
       headers: { 'Accept': 'application/json' }
@@ -933,12 +539,14 @@
       })
       .then(function (data) {
         if (myReq !== receiptsReq) { return; }   // a newer request replaced this one
+        v.panel.classList.remove('is-loading');
         v.body.innerHTML = '';
         (data.receipts || []).forEach(function (r) { v.body.appendChild(buildReceiptRow(r)); });
         refreshReceiptsMeta(selected);
       })
       .catch(function () {
         if (myReq !== receiptsReq) { return; }
+        v.panel.classList.remove('is-loading');
         showHint('Could not load receipts for ' + formatDisplay(selected) + '. Please try again.');
       });
   }
@@ -947,6 +555,7 @@
     var selected = dateInput.value;
     if (current === 'labour') { applyLabourFilter(selected); }
     else { applyReceiptsFilter(selected); }
+    syncChips();
   }
 
   function setView(name, updateUrl) {
@@ -975,6 +584,14 @@
 
   dateInput.addEventListener('change', applyFilter);
 
+  function pickDate(iso) {
+    if (!datesOk) { return; }
+    dateInput.value = (dateInput.value === iso) ? '' : iso;
+    applyFilter();
+  }
+  chipToday.addEventListener('click', function () { pickDate(TODAY); });
+  chipYest.addEventListener('click', function () { pickDate(YESTERDAY); });
+
   clearBtn.addEventListener('click', function () {
     dateInput.value = '';
     applyFilter();
@@ -1000,6 +617,7 @@
     saveBtn.disabled = false;
     saveBtn.textContent = 'Save changes';
     modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
     modal.setAttribute('aria-hidden', 'false');
     fAmount.focus();
     fAmount.select();
@@ -1007,6 +625,7 @@
 
   function closeEdit() {
     modal.classList.remove('open');
+    document.body.style.overflow = '';
     modal.setAttribute('aria-hidden', 'true');
     editTxId = null;
   }
@@ -1059,6 +678,8 @@
     if (e.key === 'Enter' && modal.classList.contains('open') && e.target.tagName === 'INPUT') { saveEdit(); }
   });
 
+  formatAmounts(views.labour.body);
+  formatAmounts(views.receipts.body);
   if (initialDate) { dateInput.value = initialDate; }
   setView('{{ view|default("labour") }}' === 'receipts' ? 'receipts' : 'labour', false);
 })();
