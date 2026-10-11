@@ -473,6 +473,83 @@
 
   .type-pill.supplier { background: #f6ecd2; color: #8a6a1c; }
 
+  /* ---------- receipt edit modal ---------- */
+  button.btn-edit-entry { cursor: pointer; }
+
+  .lh-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(14,26,46,0.55);
+  }
+
+  .lh-modal-backdrop.open { display: flex; }
+
+  .lh-modal {
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px -20px rgba(14,26,46,0.6);
+  }
+
+  .lh-modal-head {
+    padding: 1rem 1.4rem;
+    background: linear-gradient(135deg, var(--navy-800), var(--navy-950));
+    color: #f7f2e6;
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+  }
+
+  .lh-modal-body { padding: 1.2rem 1.4rem 0.4rem; display: flex; flex-direction: column; gap: 0.85rem; }
+
+  .lh-modal-body label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .lh-modal-body input {
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    background: var(--cream);
+    border: 1px solid var(--card-line);
+    border-radius: 10px;
+    padding: 0.55rem 0.8rem;
+    outline: none;
+  }
+
+  .lh-modal-body input:focus {
+    border-color: var(--teal-500);
+    box-shadow: 0 0 0 3px rgba(22,160,135,0.15);
+  }
+
+  .lh-modal-body input[readonly] { color: var(--text-muted); cursor: not-allowed; }
+
+  .lh-modal-error { min-height: 1.1rem; font-size: 0.8rem; color: #b3261e; }
+
+  .lh-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    padding: 0.6rem 1.4rem 1.2rem;
+  }
+
+  .lh-modal-actions .btn-save { border: 1px solid var(--teal-700); font-size: 0.82rem; padding: 0.5rem 1.3rem; cursor: pointer; }
+  .lh-modal-actions .btn-save[disabled] { opacity: 0.6; cursor: wait; }
+
   @media (max-width: 576px) {
     table.lh-table thead th,
     table.lh-table tbody td { padding-left: 1rem; padding-right: 0.85rem; }
@@ -610,10 +687,7 @@
 
         <div class="lh-table-head">
             <h5>Receipt log</h5>
-            <div class="lh-head-right">
-                <span class="lh-total-tag" id="lhReceiptTotal"></span>
-                <span class="lh-today-tag"><span class="lh-today-dot"></span>TODAY &middot; {{ today.strftime('%d %B %Y') if today.strftime is defined else today }}</span>
-            </div>
+            <span class="lh-today-tag"><span class="lh-today-dot"></span>TODAY &middot; {{ today.strftime('%d %B %Y') if today.strftime is defined else today }}</span>
         </div>
 
         <div class="lh-table-scroll">
@@ -624,7 +698,8 @@
                     <th>Date</th>
                     <th>Received from</th>
                     <th>Note</th>
-                    <th class="amount-col" style="padding-right:1.75rem;">Amount</th>
+                    <th class="amount-col">Amount</th>
+                    <th class="status-col">Action</th>
                 </tr>
             </thead>
 
@@ -634,7 +709,7 @@
             {% set r_iso = r.tx_day.strftime('%Y-%m-%d') if r.tx_day.strftime is defined else r.tx_day %}
             {% set r_display = r.tx_day.strftime('%d %B %Y') if r.tx_day.strftime is defined else r.tx_day %}
 
-            <tr class="{{ 'is-today' if r.tx_day == today else '' }}" data-date="{{ r_iso }}" data-amount="{{ '%.2f'|format(r.amount) }}">
+            <tr class="{{ 'is-today' if r.tx_day == today else '' }}" data-tx-id="{{ r.tx_id }}" data-date="{{ r_iso }}" data-amount="{{ '%.2f'|format(r.amount) }}" data-party="{{ r.party_name or 'Unknown' }}" data-note="{{ r.note or '' }}">
 
                 <td class="date-col">{{ r_display }}</td>
 
@@ -649,7 +724,14 @@
                     {% if r.note %}{{ r.note }}{% else %}<span class="no-note">No note added</span>{% endif %}
                 </td>
 
-                <td class="amount-col" style="padding-right:1.75rem;">{{ "%.2f"|format(r.amount) }}</td>
+                <td class="amount-col">{{ "%.2f"|format(r.amount) }}</td>
+
+                <td class="status-col">
+                    <button type="button" class="btn-edit-entry btn-edit-receipt">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        Edit
+                    </button>
+                </td>
 
             </tr>
 
@@ -663,6 +745,36 @@
 
     </div>
 
+
+    <div class="lh-modal-backdrop" id="lhEditModal" aria-hidden="true">
+        <div class="lh-modal" role="dialog" aria-modal="true" aria-labelledby="lhEditTitle">
+            <div class="lh-modal-head" id="lhEditTitle">Edit receipt</div>
+            <div class="lh-modal-body">
+                <div>
+                    <label for="lhEditParty">Received from</label>
+                    <input type="text" id="lhEditParty" readonly>
+                </div>
+                <div>
+                    <label for="lhEditDate">Date</label>
+                    <input type="date" id="lhEditDate">
+                </div>
+                <div>
+                    <label for="lhEditAmount">Amount (&#8377;)</label>
+                    <input type="number" id="lhEditAmount" step="0.01" min="0" inputmode="decimal">
+                </div>
+                <div>
+                    <label for="lhEditNote">Note</label>
+                    <input type="text" id="lhEditNote" maxlength="200">
+                </div>
+                <div class="lh-modal-error" id="lhEditError"></div>
+            </div>
+            <div class="lh-modal-actions">
+                <button type="button" class="btn-clear-filter" id="lhEditCancel">Cancel</button>
+                <button type="button" class="btn-edit-entry btn-save" id="lhEditSave">Save changes</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -673,7 +785,7 @@
   var hintText = document.getElementById('lhFilterHintText');
   var titleEl = document.getElementById('lhTitle');
   var subtitleEl = document.getElementById('lhSubtitle');
-  var receiptTotal = document.getElementById('lhReceiptTotal');
+  var initialDate = "{{ selected_date|default('') }}";
   var RECEIPTS_URL = "{{ url_for('labour_history_receipts') }}";
 
   var views = {
@@ -710,10 +822,6 @@
     return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
   }
 
-  function formatINR(n) {
-    return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-
   function showHint(text) {
     hintText.textContent = text;
     hint.classList.remove('hidden');
@@ -738,6 +846,8 @@
   }
 
   /* ---------- receipts: default window + fetch by date ---------- */
+  var EDIT_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+
   function makeCell(cls, text) {
     var td = document.createElement('td');
     if (cls) { td.className = cls; }
@@ -750,6 +860,9 @@
     if (r.is_today) { tr.className = 'is-today'; }
     tr.setAttribute('data-date', r.date);
     tr.setAttribute('data-amount', Number(r.amount).toFixed(2));
+    tr.setAttribute('data-tx-id', r.tx_id);
+    tr.setAttribute('data-party', r.party_name);
+    tr.setAttribute('data-note', r.note || '');
 
     tr.appendChild(makeCell('date-col', r.date_display));
 
@@ -777,19 +890,21 @@
     }
     tr.appendChild(note);
 
-    var amt = makeCell('amount-col', Number(r.amount).toFixed(2));
-    amt.style.paddingRight = '1.75rem';
-    tr.appendChild(amt);
+    tr.appendChild(makeCell('amount-col', Number(r.amount).toFixed(2)));
+
+    var action = makeCell('status-col');
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-edit-entry btn-edit-receipt';
+    btn.innerHTML = EDIT_ICON + ' Edit';
+    action.appendChild(btn);
+    tr.appendChild(action);
     return tr;
   }
 
   function refreshReceiptsMeta(selected) {
     var v = views.receipts;
     var rows = v.body.querySelectorAll('tr');
-    var total = 0;
-    rows.forEach(function (row) { total += parseFloat(row.getAttribute('data-amount')) || 0; });
-
-    receiptTotal.textContent = 'Total ' + formatINR(total);
     v.noResults.textContent = selected
       ? 'No receipts on ' + formatDisplay(selected) + '.'
       : 'No receipts in the last few days. Pick a date to look further back.';
@@ -865,6 +980,87 @@
     applyFilter();
   });
 
+  /* ---------- receipt edit modal ---------- */
+  var modal = document.getElementById('lhEditModal');
+  var fParty = document.getElementById('lhEditParty');
+  var fDate = document.getElementById('lhEditDate');
+  var fAmount = document.getElementById('lhEditAmount');
+  var fNote = document.getElementById('lhEditNote');
+  var fError = document.getElementById('lhEditError');
+  var saveBtn = document.getElementById('lhEditSave');
+  var editTxId = null;
+
+  function openEdit(tr) {
+    editTxId = tr.getAttribute('data-tx-id');
+    fParty.value = tr.getAttribute('data-party') || '';
+    fDate.value = tr.getAttribute('data-date') || '';
+    fAmount.value = tr.getAttribute('data-amount') || '';
+    fNote.value = tr.getAttribute('data-note') || '';
+    fError.textContent = '';
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save changes';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    fAmount.focus();
+    fAmount.select();
+  }
+
+  function closeEdit() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    editTxId = null;
+  }
+
+  function saveEdit() {
+    var amount = parseFloat(fAmount.value);
+    if (!fDate.value) { fError.textContent = 'Please choose a date.'; return; }
+    if (isNaN(amount) || amount < 0) { fError.textContent = 'Please enter a valid amount.'; return; }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving\u2026';
+    fError.textContent = '';
+
+    fetch('/transactions/edit/' + encodeURIComponent(editTxId), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ amount: amount, tx_date: fDate.value, note: fNote.value.trim() })
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok || data.error) { throw new Error(data.message || data.error || ('HTTP ' + res.status)); }
+          return data;
+        });
+      })
+      .then(function () {
+        // reload on the receipts tab (keeping the selected date) so every row is fresh
+        var url = new URL(window.location.href);
+        url.searchParams.set('view', 'receipts');
+        if (dateInput.value) { url.searchParams.set('date', dateInput.value); }
+        else { url.searchParams.delete('date'); }
+        window.location.href = url.toString();
+      })
+      .catch(function (err) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save changes';
+        fError.textContent = 'Could not save: ' + err.message;
+      });
+  }
+
+  views.receipts.body.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-edit-receipt');
+    if (!btn) { return; }
+    openEdit(btn.closest('tr'));
+  });
+  saveBtn.addEventListener('click', saveEdit);
+  document.getElementById('lhEditCancel').addEventListener('click', closeEdit);
+  modal.addEventListener('click', function (e) { if (e.target === modal) { closeEdit(); } });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal.classList.contains('open')) { closeEdit(); }
+    if (e.key === 'Enter' && modal.classList.contains('open') && e.target.tagName === 'INPUT') { saveEdit(); }
+  });
+
+  if (initialDate) { dateInput.value = initialDate; }
   setView('{{ view|default("labour") }}' === 'receipts' ? 'receipts' : 'labour', false);
 })();
 </script>
