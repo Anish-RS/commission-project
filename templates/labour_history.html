@@ -755,8 +755,8 @@
                     <input type="text" id="lhEditParty" readonly>
                 </div>
                 <div>
-                    <label for="lhEditDate">Date</label>
-                    <input type="date" id="lhEditDate">
+                    <label for="lhEditDate">Date (cannot be changed)</label>
+                    <input type="date" id="lhEditDate" readonly>
                 </div>
                 <div>
                     <label for="lhEditAmount">Amount (&#8377;)</label>
@@ -1013,7 +1013,6 @@
 
   function saveEdit() {
     var amount = parseFloat(fAmount.value);
-    if (!fDate.value) { fError.textContent = 'Please choose a date.'; return; }
     if (isNaN(amount) || amount < 0) { fError.textContent = 'Please enter a valid amount.'; return; }
 
     saveBtn.disabled = true;
@@ -1024,7 +1023,7 @@
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ amount: amount, tx_date: fDate.value, note: fNote.value.trim() })
+      body: JSON.stringify({ amount: amount, note: fNote.value })
     })
       .then(function (res) {
         return res.json().catch(function () { return {}; }).then(function (data) {
