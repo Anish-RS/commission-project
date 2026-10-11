@@ -2605,17 +2605,31 @@ def labour_history():
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
     cursor.execute("""
-        SELECT
-            labour_id,
-            entry_date,
-            amount,
-            note
+        SELECT labour_id, entry_date, amount, note
         FROM labour_entries
         ORDER BY entry_date DESC, labour_id DESC
         LIMIT 20
     """)
-
     entries = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT
+            t.tx_id,
+            DATE(t.tx_date)          AS tx_day,
+            t.amount,
+            t.note,
+            t.entity_type,
+            COALESCE(c.name, s.name) AS party_name
+        FROM transactions t
+        LEFT JOIN customers c ON (t.entity_type='customer' AND t.entity_id=c.customer_id)
+        LEFT JOIN suppliers s ON (t.entity_type='supplier' AND t.entity_id=s.supplier_id)
+        WHERE t.tx_type = 'receipt'
+        ORDER BY t.tx_date DESC, t.tx_id DESC
+        LIMIT 200
+    """)
+    receipts = cursor.fetchall()
+    for r in receipts:
+        r["amount"] = float(r["amount"] or 0)
 
     cursor.close()
     conn.close()
@@ -2623,9 +2637,10 @@ def labour_history():
     return render_template(
         "labour_history.html",
         entries=entries,
-        today=ist_today()
+        receipts=receipts,
+        today=ist_today(),
+        view=request.args.get("view", "labour"),
     )
-
 @app.route("/labour/edit/<int:labour_id>", methods=["GET", "POST"])
 def edit_labour(labour_id):
 
